@@ -1,7 +1,8 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-setup(name='gym_foo',
+setup(name='darcDQN',
       version='0.0.1',
-      install_requires=['gym[atari,classic_control]']
+      packages=find_packages(),
+      install_requires=['gym[atari,classic_control]'],
 )
 
