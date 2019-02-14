@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Berries:
-    """A desciption of all possible berries made up from 2**3 different
+    """A desciption of all possible berries made up from 2**3 = 8 different
     tastes and whether or not they are good to eat
 
     Example berry:
