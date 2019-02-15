@@ -15,7 +15,10 @@ def common_arg_parser():
     parser = arg_parser()
     parser.add_argument('--env', help='Environment ID', type=str, default=None)
     parser.add_argument('--agent', help='Agent ID', type=str, default=None)
-    parser.add_argument('--num_timesteps', type=float, default=1e5)
+    parser.add_argument('--num_epochs', type=float, default=None)
+    parser.add_argument('--num_timesteps', type=float, default=None)
+    parser.add_argument('--mode', help='Render mode (human, rgb_array)',
+                        type=str, default='human')
     parser.add_argument('--play', default=False, action='store_true')
     return parser
 
