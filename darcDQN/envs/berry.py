@@ -64,11 +64,9 @@ class BerryEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), \
                 "{0!r} ({0!s}) invalid".format(action, type(action))
-        state = self.state
-        berry, do_eat = state
-        self.state = self._random_berry()
+        self.state, self.do_eat = self._random_berry()
 
-        reward = self._get_reward(action, do_eat)
+        reward = self._get_reward(action, self.do_eat)
         done = False
 
         return np.array(self.state), reward, done, {}
@@ -80,7 +78,7 @@ class BerryEnv(gym.Env):
         return berry, do_eat
 
     def _get_reward(self, action, do_eat):
-        if action is do_eat:
+        if action == do_eat:
             reward = 1.0
         else:
             reward = -1.0
@@ -88,7 +86,8 @@ class BerryEnv(gym.Env):
 
     def reset(self):
         berry, do_eat = self._random_berry()
-        self.state = (berry, do_eat)
+        self.state = berry
+        self.do_eat = do_eat
         return np.array(self.state)
 
     #  TODO: What to do when closing? #
