@@ -18,7 +18,7 @@ class AbstractAgent(ABC):
         """Return which action to take given the current state."""
         pass
 
-    def observe(self, prev_state, next_state, action, reward):
+    def observe(self, prev_state, next_state, action, reward, done):
         """Observe the results of an action."""
         pass
 

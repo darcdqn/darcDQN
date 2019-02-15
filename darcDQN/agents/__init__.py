@@ -1,5 +1,3 @@
-
-from darcDQN.agents.random_agent import RandomAgent as random_agent
 from darcDQN.agents.registration import registry, register, make, spec
 
 register(
