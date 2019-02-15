@@ -23,7 +23,7 @@ def train(args):
 
     agent = agents.make(args.agent, **kwargs)
 
-    logger.info('Training agent {} in env {}'.format(agent, env))
+    logger.info('Training agent {} in env {}'.format(args.agent, args.env))
 
     mode = args.mode
 
@@ -49,11 +49,6 @@ def train(args):
             new_obs, reward, done, info_dict = env.step(action)
             epoch_rewards[-1] += reward
 
-            print(type(obs))
-            print(type(new_obs))
-            print(type(action))
-            print(type(reward))
-            print(type(done))
             agent.observe(obs, new_obs, action, reward, done)
             obs = new_obs
 
@@ -64,6 +59,7 @@ def train(args):
 
         logger.info(('Epoch {} finished after {} timesteps with a total score '
                      + 'of {}').format(epoch, t, epoch_rewards[-1]))
+        epoch += 1
     return agent, env
 
 
