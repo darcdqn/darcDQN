@@ -7,3 +7,8 @@ register(
         entry_point='darcDQN.agents.random_agent:RandomAgent',
 )
 
+register(
+        id='DQNAgent-v0',
+        entry_point='darcDQN.agents.dqn_agent:DQNAgent',
+)
+
