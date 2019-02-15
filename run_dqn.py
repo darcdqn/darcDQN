@@ -16,10 +16,6 @@ def run_epoch(env, agent, render):
         tot_reward += reward
         if done:
             break
-        # Note there's no env.render() here. But the environment still can
-        # open window and render if asked by env.monitor: it calls
-        # env.render('rgb_array') to record video. Video is not recorded
-        # every episode, see capped_cubic_video_schedule for details.
     return tot_reward
 
 if __name__ == '__main__':
@@ -41,19 +37,33 @@ if __name__ == '__main__':
     agent = DQNAgent(env.observation_space.shape[0], env.action_space.n)
 
 
-    episode_count = 10000
+    episode_count = 100000
     reward = 0
     done = False
+    save_path = "./darcDQN/agents/saved_agents/my_dqn.ckpt"
 
+    agent.load_agent(save_path)
+
+    trials = 1000
+    max_reward = 0
+    reward = 0
     for i in range(episode_count):
-        tot_reward = run_epoch(env, agent, False)
-        if i % 100 == 0:
-            print("EPOCH {} OVER, reward=".format(i), tot_reward)
+        reward += run_epoch(env, agent, False)
+        if i % trials == 0:
+            print("EPOCH {}, avg reward={:.1f}".format(i, reward/trials))
+            if reward > max_reward:
+                print("Average reward over {} epochs increased from {} to {}!"\
+                      .format(trials, max_reward/trials, reward/trials))
+                print("Saving the über agent...")
+                max_reward = reward
+                agent.save_agent(save_path)
+            reward = 0
 
+    agent.save_agent(save_path)
     for i in range(episode_count):
         tot_reward = run_epoch(env, agent, True)
         print("EPOCH {} OVER, reward=".format(i), tot_reward)
-    
+
     # Close the env and write monitor result info to disk
 env.close()
 

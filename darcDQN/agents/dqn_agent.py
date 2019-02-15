@@ -1,5 +1,6 @@
 import numpy as np
 from collections import deque
+import os
 
 import tensorflow as tf
 
@@ -15,19 +16,18 @@ class DQNAgent(AbstractAgent):
     """
 
     n_hidden = 512
-    learning_rate = 0.05 #0.001
+    #learning_rate = 0.05
+    learning_rate = 0.001
     momentum = 0.95
     replay_memory_size = 500000
     eps_min = 0.1
     eps_max = 1.0
-    eps_decay_steps = 150000 #2000000
-    training_interval = 1 #4  # Only train every X iterations
-    save_steps = 1000  # Save the model every X training steps
-    copy_steps = 1000 #10000  # Copy online DQN to target DQN every X training steps
+    #eps_decay_steps = 150000
+    eps_decay_steps = 2000000
+    training_interval = 4  # Only train every X iterations
+    copy_steps = 10000  # Copy online DQN to target DQN every X training steps
     discount_rate = 0.99
-    #skip_start = 90  # Skip the start of every game (it's just waiting time).
     batch_size = 50
-    #checkpoint_path = "./my_dqn.ckpt"
 
     def q_network(self, inputs, name):
         """
@@ -58,7 +58,6 @@ class DQNAgent(AbstractAgent):
     def __init__(self, n_inputs, n_outputs):
         super().__init__(n_inputs, n_outputs)
                                             # shape=[1:st dim,    h,   w, chs]
-        print("**** n_inputs == ", n_inputs, " ****")
         self.state = tf.placeholder(tf.float32, shape=[None, n_inputs])
         self.online_qs, self.online_vars = self.q_network(self.state,
                                                      name='q_network/online')
@@ -91,6 +90,7 @@ class DQNAgent(AbstractAgent):
         # Init tensorflow
         self.sess = tf.Session()
         tf.global_variables_initializer().run(session=self.sess)
+        self.copy_online_to_target.run(session=self.sess)
         self.saver = tf.train.Saver()
 
         self.replay_memory = deque([], maxlen=DQNAgent.replay_memory_size)
@@ -132,7 +132,7 @@ class DQNAgent(AbstractAgent):
     def observe(self, prev_state, next_state, action, reward, done):
         # Save the experience in memory buffer
         self.replay_memory.append((prev_state, action, reward, next_state,
-                                    1.0 - done))
+                                    1.0 - done))  # 1-done to cancel on death
 
         if self.iteration % DQNAgent.training_interval != 0: # Don't overexert the agent
             return
@@ -155,8 +155,12 @@ class DQNAgent(AbstractAgent):
         if self.step % DQNAgent.copy_steps == 0:
             self.copy_online_to_target.run(session=self.sess)
 
-        # And save regularly
-        #if self.step % save_steps == 0:
-            #saver.save(sess, checkpoint_path)
+    def save_agent(self, file_path):
+        # ...save regularly
+        self.saver.save(self.sess, file_path)
 
+    def load_agent(self, file_path):
+        if os.path.isfile(file_path + ".index"):
+            self.saver.restore(self.sess, file_path)
+            print("Agent loaded from " + file_path)
 
