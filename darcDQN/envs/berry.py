@@ -97,4 +97,5 @@ class BerryEnv(gym.Env):
 
     #  TODO: Should we even render something in this env? #
     def render(self, mode='human'):
+        return
         super(BerryEnv, self).render(mode=mode)  # will raise an exception
