@@ -1,7 +1,9 @@
 import numpy as np
 from collections import deque
+import os
 
 import tensorflow as tf
+from tensorflow.keras.layers import Dense
 
 from .abstract_agent import AbstractAgent
 
@@ -14,59 +16,36 @@ class DQNAgent(AbstractAgent):
         discounted reward over all future time steps given the current state.
     """
 
-    n_hidden = 512
-    learning_rate = 0.05 #0.001
-    momentum = 0.95
-    replay_memory_size = 500000
-    eps_min = 0.1
-    eps_max = 1.0
-    eps_decay_steps = 150000 #2000000
-    training_interval = 1 #4  # Only train every X iterations
-    save_steps = 1000  # Save the model every X training steps
-    copy_steps = 1000 #10000  # Copy online DQN to target DQN every X training steps
+    #n_hidden = 512
+    n_hidden = 64
+    #learning_rate = 0.05
+    learning_rate = 0.001
+    #replay_memory_size = 500000
+    replay_memory_size = 50000
+    #eps_min = 0.1
+    eps_min = 0.02
+    #eps_max = 1.0
+    eps_max = 0.5
+    #eps_decay_steps = 150000
+    eps_decay_steps = 500000
+    training_interval = 1  # Only train every X iterations
+    #copy_steps = 10000  # Copy online DQN to target DQN every X training steps
+    copy_steps = 10000  # Copy online DQN to target DQN every X training steps
     discount_rate = 0.99
-    #skip_start = 90  # Skip the start of every game (it's just waiting time).
     batch_size = 50
-    #checkpoint_path = "./my_dqn.ckpt"
-
-    def q_network(self, inputs, name):
-        """
-        Creates a q_network with 'inputs' many inputs.
-        """
-
-        initializer = tf.contrib.layers.variance_scaling_initializer()
-
-        hidden_activation = tf.nn.relu
-        #hidden_activation = tf.keras.layers.ReLU
-
-        with tf.variable_scope(name) as scope:
-            hidden = tf.layers.dense(inputs, DQNAgent.n_hidden,
-            #hidden = tf.keras.layers.Dense(DQNAgent.n_hidden, input_shape=(inputs,),
-                                     activation=hidden_activation, #tf.nn.relu, # hidden activation
-                                     kernel_initializer=initializer)
-            outputs = tf.layers.dense(hidden, self.n_outputs,
-            #outputs = tf.keras.layers.Dense(self.n_outputs, input_shape=(self.n_outputs,),
-                                      kernel_initializer=initializer)
-
-        trainable_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
-                                           scope=scope.name)
-        trainable_vars_by_name = {var.name[len(scope.name):]: var
-                                  for var in trainable_vars}
-        return outputs, trainable_vars_by_name
+    activation = 'tanh' #'relu'
 
 
     def __init__(self, n_inputs, n_outputs):
         super().__init__(n_inputs, n_outputs)
-                                            # shape=[1:st dim,    h,   w, chs]
-        print("**** n_inputs == ", n_inputs, " ****")
         self.state = tf.placeholder(tf.float32, shape=[None, n_inputs])
-        self.online_qs, self.online_vars = self.q_network(self.state,
-                                                     name='q_network/online')
-        self.target_qs, self.target_vars = self.q_network(self.state,
-                                                     name='q_network/target')
+        self.online_qs, self.online_vars = self.q_network(n_inputs)
+        self.target_qs, self.target_vars = self.q_network(n_inputs)
 
-        copy_ops = [target_var.assign(self.online_vars[var_name])
-                    for var_name, target_var in self.target_vars.items()]
+        online_weights = self.online_vars.trainable_weights
+        target_weights = self.target_vars.trainable_weights
+        copy_ops = [target_weights[i].assign(online_weights[i])
+                    for i in range(len(target_weights))]
         self.copy_online_to_target = tf.group(*copy_ops)
 
         # Placeholder used for training.
@@ -80,17 +59,20 @@ class DQNAgent(AbstractAgent):
         self.y = tf.placeholder(tf.float32, shape=[None, 1])
         error = tf.abs(self.y - q_value)
         clipped_error = tf.clip_by_value(error, 0.0, 1.0)
-        linear_error = 2 * (error - clipped_error)
-        loss = tf.reduce_mean(tf.square(clipped_error) + linear_error)
+        #linear_error = 2 * (error - clipped_error)
+        linear_error = error - clipped_error
+        #loss = tf.reduce_mean(tf.square(clipped_error) + linear_error)
+        loss = tf.reduce_mean(0.5 * tf.square(clipped_error) + linear_error)
 
-        # Create Nesterov Accelerated Gradient optimizer for minimizing loss
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
-        optimizer = tf.train.MomentumOptimizer(DQNAgent.learning_rate, DQNAgent.momentum, use_nesterov=True)
-        self.training_op = optimizer.minimize(loss, global_step=self.global_step)
+        optimizer = tf.train.AdamOptimizer(learning_rate=DQNAgent.learning_rate)
+        self.training_op = optimizer.minimize(loss,
+                                              global_step=self.global_step)
 
         # Init tensorflow
         self.sess = tf.Session()
         tf.global_variables_initializer().run(session=self.sess)
+        self.copy_online_to_target.run(session=self.sess)
         self.saver = tf.train.Saver()
 
         self.replay_memory = deque([], maxlen=DQNAgent.replay_memory_size)
@@ -98,6 +80,21 @@ class DQNAgent(AbstractAgent):
         self.step = 0
         self.iteration = 0
 
+
+    def q_network(self, inputs):
+        """
+        Creates a q_network with 'inputs' many inputs.
+        """
+        model = tf.keras.models.Sequential()
+
+        model.add(Dense(DQNAgent.n_hidden,
+                        input_shape=(inputs,),
+                        activation=DQNAgent.activation))
+        model.add(Dense(self.n_outputs))
+
+        q_values = model(self.state)
+
+        return q_values, model
 
     def sample_memories(self):
         """
@@ -132,9 +129,9 @@ class DQNAgent(AbstractAgent):
     def observe(self, prev_state, next_state, action, reward, done):
         # Save the experience in memory buffer
         self.replay_memory.append((prev_state, action, reward, next_state,
-                                    1.0 - done))
+                                    1.0 - done))  # 1-done to cancel on death
 
-        if self.iteration % DQNAgent.training_interval != 0: # Don't overexert the agent
+        if self.iteration % DQNAgent.training_interval != 0: # Don't overexert 
             return
 
         # Sample memories and use the target DQN to produce the target Q-Val
@@ -155,8 +152,13 @@ class DQNAgent(AbstractAgent):
         if self.step % DQNAgent.copy_steps == 0:
             self.copy_online_to_target.run(session=self.sess)
 
-        # And save regularly
-        #if self.step % save_steps == 0:
-            #saver.save(sess, checkpoint_path)
+    def save_agent(self, file_path):
+        # ...save regularly
+        self.saver.save(self.sess, file_path)
+        print('Agent saved after taking {} steps.'.format(self.step))
 
+    def load_agent(self, file_path):
+        if os.path.isfile(file_path + '.index'):
+            self.saver.restore(self.sess, file_path)
+            print('Agent loaded from ' + file_path)
 
