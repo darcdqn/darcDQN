@@ -26,16 +26,15 @@ class DQNAgent(AbstractAgent):
     training_interval = 1  # Only train every X iterations
     #eps_min = 0.1
     eps_min = 0.02
-    #eps_max = 1.0
     eps_max = 1.0
     #eps_decay_steps = 150000
-    #eps_decay_steps = training_interval * 500000
     eps_decay_steps = 75000
     #copy_steps = 10000  # Copy online DQN to target DQN every X training steps
     copy_steps = 5000  # Copy online DQN to target DQN every X training steps
     discount_rate = 0.99
     batch_size = 64
     activation = 'tanh' #'relu'
+    optimizer_name = None
 
 
     def __init__(self, n_inputs, n_outputs):
@@ -67,7 +66,9 @@ class DQNAgent(AbstractAgent):
         loss = tf.reduce_mean(0.5 * tf.square(clipped_error) + linear_error)
 
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
-        optimizer = tf.train.AdamOptimizer(learning_rate=DQNAgent.learning_rate)
+        #optimizer = tf.train.AdamOptimizer(learning_rate=DQNAgent.learning_rate)
+        optimizer = tf.train.AdadeltaOptimizer()#learning_rate=DQNAgent.learning_rate)
+        self.optimizer_name = optimizer.get_name()
         self.training_op = optimizer.minimize(loss,
                                               global_step=self.global_step)
 

@@ -45,6 +45,7 @@ if __name__ == '__main__':
         fp.write('Neurons/layer = {}\n'.format(agent.n_hidden))
         fp.write('Hidden layers = {}\n'.format(agent.hidden_layers))
         fp.write('Discount rate = {}\n'.format(agent.discount_rate))
+        fp.write('Optimizer     = {}\n'.format(agent.optimizer_name))
         fp.write('Epsilon between {} and {}\n'.format(
             agent.eps_max, agent.eps_min))
         fp.write('Eps decay steps     = {}\n'.format(agent.eps_decay_steps))
