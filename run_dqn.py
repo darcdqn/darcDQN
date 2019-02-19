@@ -27,34 +27,35 @@ if __name__ == '__main__':
 
     env_name = 'CartPole-v1'
     env = gym.make(env_name)
-
     env.seed(0)
-    print('obs_space =', env.observation_space.shape[0],
-          ', action_space.n =', env.action_space.n)
-    agent = DQNAgent(env.observation_space.shape[0], env.action_space.n)
 
     version = 0.19
     path = './darcDQN/agents/saved_agents/' + env_name
-    load_path = path + '_{:.2f}/agent.ckpt'.format(version)
+    #load_path = path + '_{:.2f}/agent.ckpt'.format(version+0.01)
+    load_path = path + '_{:.2f}/agent.ckpt'.format(version+0.01)
     save_path = path + '_{:.2f}'.format(version+0.01)
 
-    agent.load_agent(load_path)
+    agent = DQNAgent(env.observation_space.shape[0], env.action_space.n)
+    if not agent.load_agent(load_path):
+        agent.init()
 
     with open(save_path + '_conf.txt', 'w') as fp:
-        fp.write('Activation    = ' + agent.activation + '\n')
-        fp.write('Batch size    = {}\n'.format(agent.batch_size))
-        fp.write('Copy-rate     = {}\n'.format(agent.copy_steps))
-        fp.write('Learning rate = {}\n'.format(agent.learning_rate))
-        fp.write('Hidden layers = {}\n'.format(agent.n_hidden))
-        #fp.write('Hidden layers = {}\n'.format(agent.hidden_layers))
-        fp.write('Discount rate = {}\n'.format(agent.discount_rate))
-        fp.write('Optimizer     = {}\n'.format(agent.optimizer_name))
-        fp.write('Epsilon between {} and {}\n'.format(
-            agent.eps_max, agent.eps_min))
-        fp.write('Eps decay steps     = {}\n'.format(agent.eps_decay_steps))
-        fp.write('exp replay mem size = {}\n'.format(agent.replay_memory_size))
-        fp.write('Training interval   = {}\n'.format(agent.training_interval))
-        #fp.write(' = ' + agent + '\n')
+        for key, val in zip(agent.__dict__.keys(), agent.__dict__.items()):
+            print(key, val)
+        #fp.write('Activation    = ' + agent.activation + '\n')
+        #fp.write('Batch size    = {}\n'.format(agent.batch_size))
+        #fp.write('Copy-rate     = {}\n'.format(agent.copy_steps))
+        #fp.write('Learning rate = {}\n'.format(agent.learning_rate))
+        #fp.write('Hidden layers = {}\n'.format(agent.n_hidden))
+        ##fp.write('Hidden layers = {}\n'.format(agent.hidden_layers))
+        #fp.write('Discount rate = {}\n'.format(agent.discount_rate))
+        #fp.write('Optimizer     = {}\n'.format(agent.optimizer_name))
+        #fp.write('Epsilon between {} and {}\n'.format(
+        #    agent.eps_max, agent.eps_min))
+        #fp.write('Eps decay steps     = {}\n'.format(agent.eps_decay_steps))
+        #fp.write('exp replay mem size = {}\n'.format(agent.replay_memory_size))
+        #fp.write('Training interval   = {}\n'.format(agent.training_interval))
+        ##fp.write(' = ' + agent + '\n')
 
     save_path = save_path + '/agent.ckpt'
 
