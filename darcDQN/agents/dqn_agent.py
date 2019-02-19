@@ -18,21 +18,23 @@ class DQNAgent(AbstractAgent):
 
     #n_hidden = 512
     n_hidden = 64
+    hidden_layers = 1
     #learning_rate = 0.05
-    learning_rate = 0.001
+    learning_rate = 0.0005
     #replay_memory_size = 500000
-    replay_memory_size = 50000
+    replay_memory_size = 25000
+    training_interval = 1  # Only train every X iterations
     #eps_min = 0.1
     eps_min = 0.02
     #eps_max = 1.0
-    eps_max = 0.5
+    eps_max = 1.0
     #eps_decay_steps = 150000
-    eps_decay_steps = 500000
-    training_interval = 1  # Only train every X iterations
+    #eps_decay_steps = training_interval * 500000
+    eps_decay_steps = 75000
     #copy_steps = 10000  # Copy online DQN to target DQN every X training steps
-    copy_steps = 10000  # Copy online DQN to target DQN every X training steps
+    copy_steps = 5000  # Copy online DQN to target DQN every X training steps
     discount_rate = 0.99
-    batch_size = 50
+    batch_size = 64
     activation = 'tanh' #'relu'
 
 
@@ -90,6 +92,9 @@ class DQNAgent(AbstractAgent):
         model.add(Dense(DQNAgent.n_hidden,
                         input_shape=(inputs,),
                         activation=DQNAgent.activation))
+        for i in range(DQNAgent.hidden_layers - 1):
+            model.add(Dense(DQNAgent.n_hidden,
+                            activation=DQNAgent.activation))
         model.add(Dense(self.n_outputs))
 
         q_values = model(self.state)
@@ -111,14 +116,18 @@ class DQNAgent(AbstractAgent):
         return (cols[0], cols[1], cols[2].reshape(-1, 1), cols[3],
                 cols[4].reshape(-1, 1))
 
+    def get_eps(self):
+        eps_min = DQNAgent.eps_min; eps_max = DQNAgent.eps_max
+        return max(eps_min, eps_max
+                   - (eps_max-eps_min)*self.step/DQNAgent.eps_decay_steps)
+
     def get_action(self, state):
         self.step = self.global_step.eval(session=self.sess)
         self.iteration += 1
 
         # P(Random action)=epsilon, else let online DQN evaluate what to do
         eps_min = DQNAgent.eps_min; eps_max = DQNAgent.eps_max
-        epsilon = max(eps_min, eps_max
-                      - (eps_max-eps_min)*self.step/DQNAgent.eps_decay_steps)
+        epsilon = self.get_eps()
         if np.random.rand() < epsilon:
             return np.random.randint(self.n_outputs)  # random action
         else:
@@ -131,7 +140,7 @@ class DQNAgent(AbstractAgent):
         self.replay_memory.append((prev_state, action, reward, next_state,
                                     1.0 - done))  # 1-done to cancel on death
 
-        if self.iteration % DQNAgent.training_interval != 0: # Don't overexert 
+        if self.iteration % DQNAgent.training_interval != 0: # Don't overexert
             return
 
         # Sample memories and use the target DQN to produce the target Q-Val
@@ -155,10 +164,13 @@ class DQNAgent(AbstractAgent):
     def save_agent(self, file_path):
         # ...save regularly
         self.saver.save(self.sess, file_path)
-        print('Agent saved after taking {} steps.'.format(self.step))
+        print('Agent saved to ' + file_path + ' after taking {} steps.'.format(
+            self.step))
 
     def load_agent(self, file_path):
         if os.path.isfile(file_path + '.index'):
             self.saver.restore(self.sess, file_path)
             print('Agent loaded from ' + file_path)
+        else:
+            print('No agent loaded.')
 
