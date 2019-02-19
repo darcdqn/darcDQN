@@ -15,11 +15,15 @@ def common_arg_parser():
     parser = arg_parser()
     parser.add_argument('--env', help='Environment ID', type=str, default=None)
     parser.add_argument('--agent', help='Agent ID', type=str, default=None)
-    parser.add_argument('--num_epochs', type=float, default=None)
-    parser.add_argument('--num_timesteps', type=float, default=None)
-    parser.add_argument('--mode', help='Render mode (human, rgb_array)',
+    parser.add_argument('--num_episodes', type=float, default=0.0)
+    parser.add_argument('--num_timesteps', type=int, default=None)
+    parser.add_argument('--mode', help='Render mode (human, rgb_array, none)',
                         type=str, default='human')
     parser.add_argument('--play', default=False, action='store_true')
+    parser.add_argument('--save-path', help='Path to save trained agent to',
+                        type=str, default=None)
+    parser.add_argument('--load-path', help='Path to load trained agent from',
+                        type=str, default=None)
     return parser
 
 
