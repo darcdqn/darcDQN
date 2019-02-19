@@ -45,8 +45,8 @@ if __name__ == '__main__':
         fp.write('Batch size    = {}\n'.format(agent.batch_size))
         fp.write('Copy-rate     = {}\n'.format(agent.copy_steps))
         fp.write('Learning rate = {}\n'.format(agent.learning_rate))
-        fp.write('Neurons/layer = {}\n'.format(agent.n_hidden))
-        fp.write('Hidden layers = {}\n'.format(agent.hidden_layers))
+        fp.write('Hidden layers = {}\n'.format(agent.n_hidden))
+        #fp.write('Hidden layers = {}\n'.format(agent.hidden_layers))
         fp.write('Discount rate = {}\n'.format(agent.discount_rate))
         fp.write('Optimizer     = {}\n'.format(agent.optimizer_name))
         fp.write('Epsilon between {} and {}\n'.format(
@@ -70,8 +70,8 @@ if __name__ == '__main__':
         reward += run_epoch(env, agent, False)
         if i % trials == 0:
             t = int(time.perf_counter() - start)
-            print('{} sec, EPOCH {}, eps={:.3f}, reward={:.1f}'.format(
-                t, i, agent.get_eps(), reward/trials))
+            print('{} sec, {} runs, steps={}, eps={:.2f}, reward={:.1f}'.format(
+                t, i, agent.step, agent.get_eps(), reward/trials))
             start = time.perf_counter()
             if reward > max_reward:
                 print('Average reward over {} epochs increased from {} to {}!'\

@@ -17,12 +17,10 @@ class DQNAgent(AbstractAgent):
     """
 
     #n_hidden = 512
-    n_hidden = 64
-    hidden_layers = 2
+    n_hidden = [64, 32]
     #learning_rate = 0.05
     learning_rate = 0.0005
-    #replay_memory_size = 500000
-    replay_memory_size = 25000
+    replay_memory_size = 500000
     training_interval = 1  # Only train every X iterations
     #eps_min = 0.1
     eps_min = 0.02
@@ -30,10 +28,10 @@ class DQNAgent(AbstractAgent):
     #eps_decay_steps = 150000
     eps_decay_steps = 75000
     #copy_steps = 10000  # Copy online DQN to target DQN every X training steps
-    copy_steps = 5000  # Copy online DQN to target DQN every X training steps
+    copy_steps = 1000  # Copy online DQN to target DQN every X training steps
     discount_rate = 0.99
-    batch_size = 64
-    activation = 'tanh' #'relu'
+    batch_size = 32
+    activation = 'relu' #'tanh' #'relu'
     optimizer_name = None
 
 
@@ -67,7 +65,7 @@ class DQNAgent(AbstractAgent):
 
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
         optimizer = tf.train.AdamOptimizer(learning_rate=DQNAgent.learning_rate)
-        #optimizer = tf.train.AdadeltaOptimizer()#learning_rate=DQNAgent.learning_rate)
+        #optimizer = tf.train.AdadeltaOptimizer(DQNAgent.learning_rate)
         self.optimizer_name = optimizer.get_name()
         self.training_op = optimizer.minimize(loss,
                                               global_step=self.global_step)
@@ -90,12 +88,11 @@ class DQNAgent(AbstractAgent):
         """
         model = tf.keras.models.Sequential()
 
-        model.add(Dense(DQNAgent.n_hidden,
+        model.add(Dense(DQNAgent.n_hidden[0],
                         input_shape=(inputs,),
                         activation=DQNAgent.activation))
-        for i in range(DQNAgent.hidden_layers - 1):
-            model.add(Dense(DQNAgent.n_hidden,
-                            activation=DQNAgent.activation))
+        for n in DQNAgent.n_hidden[1:]:
+            model.add(Dense(n, activation=DQNAgent.activation))
         model.add(Dense(self.n_outputs))
 
         q_values = model(self.state)
@@ -147,10 +144,24 @@ class DQNAgent(AbstractAgent):
         # Sample memories and use the target DQN to produce the target Q-Val
         x_state_val, x_action_val, rewards, x_next_state_val, continues = (
             self.sample_memories())
-        next_q_values = self.target_qs.eval(
-            feed_dict={self.state: x_state_val}, session=self.sess)
-        max_next_q_values = np.max(next_q_values, axis=1, keepdims=True)
+        #next_q_values = self.target_qs.eval(
+        #    feed_dict={self.state: x_next_state_val}, session=self.sess)
+        #max_next_q_values = np.max(next_q_values, axis=1, keepdims=True)
+        #y_val = rewards + continues * DQNAgent.discount_rate*max_next_q_values
+        next_q_values = self.online_qs.eval(
+            feed_dict={self.state: x_next_state_val}, session=self.sess)
+        #print("q_vals:", next_q_values)
+        max_q_actions = np.argmax(next_q_values, axis=1)
+        #print("max_q_actions:", max_q_actions)
+        #print("max_q_action:", max_next_q_values)
+        target_q_values = self.target_qs.eval(
+            feed_dict={self.state: x_next_state_val}, session=self.sess)
+        #print("Target qs:", target_q_values)
+        max_next_q_values = np.array([
+            [target_q_values[i][a]] for i, a in enumerate(max_q_actions)])
+        #print("max_next_q_values :", max_next_q_values)
         y_val = rewards + continues * DQNAgent.discount_rate*max_next_q_values
+        #print("y_val:", y_val)
 
         # Training the online DQN
         self.training_op.run(feed_dict={self.state: x_state_val,
