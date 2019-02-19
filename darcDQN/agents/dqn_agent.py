@@ -18,7 +18,7 @@ class DQNAgent(AbstractAgent):
 
     #n_hidden = 512
     n_hidden = 64
-    hidden_layers = 1
+    hidden_layers = 2
     #learning_rate = 0.05
     learning_rate = 0.0005
     #replay_memory_size = 500000
@@ -66,8 +66,8 @@ class DQNAgent(AbstractAgent):
         loss = tf.reduce_mean(0.5 * tf.square(clipped_error) + linear_error)
 
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
-        #optimizer = tf.train.AdamOptimizer(learning_rate=DQNAgent.learning_rate)
-        optimizer = tf.train.AdadeltaOptimizer()#learning_rate=DQNAgent.learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=DQNAgent.learning_rate)
+        #optimizer = tf.train.AdadeltaOptimizer()#learning_rate=DQNAgent.learning_rate)
         self.optimizer_name = optimizer.get_name()
         self.training_op = optimizer.minimize(loss,
                                               global_step=self.global_step)

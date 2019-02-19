@@ -25,7 +25,8 @@ if __name__ == '__main__':
     # want to change the amount of output.
     logger.set_level(logger.INFO)
 
-    env = gym.make('CartPole-v1')
+    env_name = 'CartPole-v1'
+    env = gym.make(env_name)
 
     env.seed(0)
     print('obs_space =', env.observation_space.shape[0],
@@ -33,9 +34,11 @@ if __name__ == '__main__':
     agent = DQNAgent(env.observation_space.shape[0], env.action_space.n)
 
     version = 0.19
-    path = './darcDQN/agents/saved_agents/'
-    load_path = path + 'cartpole_{:.2f}/agent.ckpt'.format(version)
-    save_path = path + 'cartpole_{:.2f}'.format(version+0.01)
+    path = './darcDQN/agents/saved_agents/' + env_name
+    load_path = path + '_{:.2f}/agent.ckpt'.format(version)
+    save_path = path + '_{:.2f}'.format(version+0.01)
+
+    agent.load_agent(load_path)
 
     with open(save_path + '_conf.txt', 'w') as fp:
         fp.write('Activation    = ' + agent.activation + '\n')
@@ -55,7 +58,6 @@ if __name__ == '__main__':
 
     save_path = save_path + '/agent.ckpt'
 
-    agent.load_agent(load_path)
 
     episode_count = 5000
     trials = 100
